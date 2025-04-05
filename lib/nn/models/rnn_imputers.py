@@ -7,7 +7,7 @@ from ..utils.ops import reverse_tensor
 class RNNImputer(nn.Module):
     """Fill the blanks with a 1-step-ahead GRU predictor."""
 
-    def __init__(self, d_in, d_model, concat_mask=True, detach_inputs=False, state_init='zero', d_u=0):
+    def __init__(self, d_in, d_model, concat_mask=True, detach_inputs=False, state_init="zero", d_u=0):
         super(RNNImputer, self).__init__()
         self.concat_mask = concat_mask
         self.detach_inputs = detach_inputs
@@ -18,9 +18,9 @@ class RNNImputer(nn.Module):
         self.read_out = nn.Linear(d_model, d_in)
 
     def init_hidden_state(self, x):
-        if self.state_init == 'zero':
+        if self.state_init == "zero":
             return torch.zeros((x.size(0), self.d_model), device=x.device, dtype=x.dtype)
-        if self.state_init == 'noise':
+        if self.state_init == "noise":
             return torch.randn(x.size(0), self.d_model, device=x.device, dtype=x.dtype)
 
     def _preprocess_input(self, x, x_hat, m, u):
@@ -61,31 +61,35 @@ class RNNImputer(nn.Module):
 
     @staticmethod
     def add_model_specific_args(parser):
-        parser.add_argument('--d-in', type=int)
-        parser.add_argument('--d-model', type=int, default=None)
+        parser.add_argument("--d-in", type=int)
+        parser.add_argument("--d-model", type=int, default=None)
         return parser
 
 
 class BiRNNImputer(nn.Module):
     """Fill the blanks with a 1-step-ahead GRU predictor."""
 
-    def __init__(self, d_in, d_model, dropout=0., concat_mask=True, detach_inputs=False, state_init='zero', d_u=0):
+    def __init__(self, d_in, d_model, dropout=0.0, concat_mask=True, detach_inputs=False, state_init="zero", d_u=0):
         super(BiRNNImputer, self).__init__()
         self.d_model = d_model
-        self.fwd_rnn = RNNImputer(d_in, d_model, concat_mask, detach_inputs=detach_inputs, state_init=state_init,
-                                  d_u=d_u)
-        self.bwd_rnn = RNNImputer(d_in, d_model, concat_mask, detach_inputs=detach_inputs, state_init=state_init,
-                                  d_u=d_u)
+        self.fwd_rnn = RNNImputer(
+            d_in, d_model, concat_mask, detach_inputs=detach_inputs, state_init=state_init, d_u=d_u
+        )
+        self.bwd_rnn = RNNImputer(
+            d_in, d_model, concat_mask, detach_inputs=detach_inputs, state_init=state_init, d_u=d_u
+        )
         self.dropout = nn.Dropout(dropout)
         self.read_out = nn.Linear(2 * d_model, d_in)
 
     def forward(self, x, mask, u=None, return_hidden=False):
         # x: [batches, steps, features]
         x_hat_fwd, h_fwd = self.fwd_rnn(x, mask, u=u, return_hidden=True)
-        x_hat_bwd, h_bwd = self.bwd_rnn(reverse_tensor(x, 1),
-                                        reverse_tensor(mask, 1),
-                                        u=reverse_tensor(u, 1) if u is not None else None,
-                                        return_hidden=True)
+        x_hat_bwd, h_bwd = self.bwd_rnn(
+            reverse_tensor(x, 1),
+            reverse_tensor(mask, 1),
+            u=reverse_tensor(u, 1) if u is not None else None,
+            return_hidden=True,
+        )
         x_hat_bwd = reverse_tensor(x_hat_bwd, 1)
         h_bwd = reverse_tensor(h_bwd, 1)
         h = self.dropout(torch.cat([h_fwd, h_bwd], -1))
@@ -96,7 +100,7 @@ class BiRNNImputer(nn.Module):
 
     @staticmethod
     def add_model_specific_args(parser):
-        parser.add_argument('--d-in', type=int)
-        parser.add_argument('--d-model', type=int, default=None)
-        parser.add_argument('--dropout', type=float, default=0.)
+        parser.add_argument("--d-in", type=int)
+        parser.add_argument("--d-model", type=int, default=None)
+        parser.add_argument("--dropout", type=float, default=0.0)
         return parser

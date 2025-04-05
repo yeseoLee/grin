@@ -1,11 +1,11 @@
-import inspect
 from copy import deepcopy
+import inspect
 
 import pytorch_lightning as pl
-import torch
 from pytorch_lightning.core.decorators import auto_move_data
 from pytorch_lightning.metrics import MetricCollection
 from pytorch_lightning.utilities import move_data_to_device
+import torch
 
 from .. import epsilon
 from ..nn.utils.metric_base import MaskedMetric
@@ -13,17 +13,19 @@ from ..utils.utils import ensure_list
 
 
 class Filler(pl.LightningModule):
-    def __init__(self,
-                 model_class,
-                 model_kwargs,
-                 optim_class,
-                 optim_kwargs,
-                 loss_fn,
-                 scaled_target=False,
-                 whiten_prob=0.05,
-                 metrics=None,
-                 scheduler_class=None,
-                 scheduler_kwargs=None):
+    def __init__(
+        self,
+        model_class,
+        model_kwargs,
+        optim_class,
+        optim_kwargs,
+        loss_fn,
+        scaled_target=False,
+        whiten_prob=0.05,
+        metrics=None,
+        scheduler_class=None,
+        scheduler_kwargs=None,
+    ):
         """
         PL module to implement hole fillers.
 
@@ -46,7 +48,7 @@ class Filler(pl.LightningModule):
         self.optim_kwargs = optim_kwargs
         self.scheduler_class = scheduler_class
         if scheduler_kwargs is None:
-            self.scheduler_kwargs = dict()
+            self.scheduler_kwargs = {}
         else:
             self.scheduler_kwargs = scheduler_kwargs
 
@@ -58,11 +60,11 @@ class Filler(pl.LightningModule):
         self.scaled_target = scaled_target
 
         # during training whiten ground-truth values with this probability
-        assert 0. <= whiten_prob <= 1.
-        self.keep_prob = 1. - whiten_prob
+        assert 0.0 <= whiten_prob <= 1.0
+        self.keep_prob = 1.0 - whiten_prob
 
         if metrics is None:
-            metrics = dict()
+            metrics = {}
         self._set_metrics(metrics)
         # instantiate model
         self.model = self.model_cls(**self.model_kwargs)
@@ -81,18 +83,19 @@ class Filler(pl.LightningModule):
     @staticmethod
     def _check_metric(metric, on_step=False):
         if not isinstance(metric, MaskedMetric):
-            if 'reduction' in inspect.getfullargspec(metric).args:
-                metric_kwargs = {'reduction': 'none'}
+            if "reduction" in inspect.getfullargspec(metric).args:
+                metric_kwargs = {"reduction": "none"}
             else:
-                metric_kwargs = dict()
+                metric_kwargs = {}
             return MaskedMetric(metric, compute_on_step=on_step, metric_kwargs=metric_kwargs)
         return deepcopy(metric)
 
     def _set_metrics(self, metrics):
         self.train_metrics = MetricCollection(
-            {f'train_{k}': self._check_metric(m, on_step=True) for k, m in metrics.items()})
-        self.val_metrics = MetricCollection({f'val_{k}': self._check_metric(m) for k, m in metrics.items()})
-        self.test_metrics = MetricCollection({f'test_{k}': self._check_metric(m) for k, m in metrics.items()})
+            {f"train_{k}": self._check_metric(m, on_step=True) for k, m in metrics.items()}
+        )
+        self.val_metrics = MetricCollection({f"val_{k}": self._check_metric(m) for k, m in metrics.items()})
+        self.test_metrics = MetricCollection({f"test_{k}": self._check_metric(m) for k, m in metrics.items()})
 
     def _preprocess(self, data, batch_preprocessing):
         """
@@ -104,9 +107,9 @@ class Filler(pl.LightningModule):
         """
         if isinstance(data, (list, tuple)):
             return [self._preprocess(d, batch_preprocessing) for d in data]
-        trend = batch_preprocessing.get('trend', 0.)
-        bias = batch_preprocessing.get('bias', 0.)
-        scale = batch_preprocessing.get('scale', 1.)
+        trend = batch_preprocessing.get("trend", 0.0)
+        bias = batch_preprocessing.get("bias", 0.0)
+        scale = batch_preprocessing.get("scale", 1.0)
         return (data - trend - bias) / (scale + epsilon)
 
     def _postprocess(self, data, batch_preprocessing):
@@ -119,9 +122,9 @@ class Filler(pl.LightningModule):
         """
         if isinstance(data, (list, tuple)):
             return [self._postprocess(d, batch_preprocessing) for d in data]
-        trend = batch_preprocessing.get('trend', 0.)
-        bias = batch_preprocessing.get('bias', 0.)
-        scale = batch_preprocessing.get('scale', 1.)
+        trend = batch_preprocessing.get("trend", 0.0)
+        bias = batch_preprocessing.get("bias", 0.0)
+        scale = batch_preprocessing.get("scale", 1.0)
         return data * (scale + epsilon) + bias + trend
 
     def predict_batch(self, batch, preprocess=False, postprocess=True, return_target=False):
@@ -137,10 +140,10 @@ class Filler(pl.LightningModule):
         :param postprocess: whether to postprocess the predictions (if True we assume that the model has learned to predict the trasformed signal)
         :param return_target: whether to return the prediction target y_true and the prediction mask
         :return: (y_true), y_hat, (mask)
-        """
+        """  # noqa: E501
         batch_data, batch_preprocessing = self._unpack_batch(batch)
         if preprocess:
-            x = batch_data.pop('x')
+            x = batch_data.pop("x")
             x = self._preprocess(x, batch_preprocessing)
             y_hat = self.forward(x, **batch_data)
         else:
@@ -149,8 +152,8 @@ class Filler(pl.LightningModule):
         if postprocess:
             y_hat = self._postprocess(y_hat, batch_preprocessing)
         if return_target:
-            y = batch_data.get('y')
-            mask = batch_data.get('mask', None)
+            y = batch_data.get("y")
+            mask = batch_data.get("mask", None)
             return y, y_hat, mask
         return y_hat
 
@@ -169,8 +172,8 @@ class Filler(pl.LightningModule):
             batch = move_data_to_device(batch, self.device)
             batch_data, batch_preprocessing = self._unpack_batch(batch)
             # Extract mask and target
-            eval_mask = batch_data.pop('eval_mask', None)
-            y = batch_data.pop('y')
+            eval_mask = batch_data.pop("eval_mask", None)
+            y = batch_data.pop("y")
 
             y_hat = self.predict_batch(batch, preprocess=preprocess, postprocess=postprocess)
 
@@ -199,7 +202,7 @@ class Filler(pl.LightningModule):
             batch_data, batch_preprocessing = batch
         else:
             batch_data = batch
-            batch_preprocessing = dict()
+            batch_preprocessing = {}
         return batch_data, batch_preprocessing
 
     def training_step(self, batch, batch_idx):
@@ -207,12 +210,12 @@ class Filler(pl.LightningModule):
         batch_data, batch_preprocessing = self._unpack_batch(batch)
 
         # Extract mask and target
-        mask = batch_data['mask'].clone().detach()
-        batch_data['mask'] = torch.bernoulli(mask.clone().detach().float() * self.keep_prob).byte()
-        eval_mask = batch_data.pop('eval_mask')
-        eval_mask = (mask | eval_mask) - batch_data['mask']
+        mask = batch_data["mask"].clone().detach()
+        batch_data["mask"] = torch.bernoulli(mask.clone().detach().float() * self.keep_prob).byte()
+        eval_mask = batch_data.pop("eval_mask")
+        eval_mask = (mask | eval_mask) - batch_data["mask"]
 
-        y = batch_data.pop('y')
+        y = batch_data.pop("y")
 
         # Compute predictions and compute loss
         imputation = self.predict_batch(batch, preprocess=False, postprocess=False)
@@ -230,7 +233,7 @@ class Filler(pl.LightningModule):
             imputation = self._postprocess(imputation, batch_preprocessing)
         self.train_metrics.update(imputation.detach(), y, eval_mask)  # all unseen data
         self.log_dict(self.train_metrics, on_step=False, on_epoch=True, logger=True, prog_bar=True)
-        self.log('train_loss', loss.detach(), on_step=False, on_epoch=True, logger=True, prog_bar=False)
+        self.log("train_loss", loss.detach(), on_step=False, on_epoch=True, logger=True, prog_bar=False)
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -238,8 +241,8 @@ class Filler(pl.LightningModule):
         batch_data, batch_preprocessing = self._unpack_batch(batch)
 
         # Extract mask and target
-        eval_mask = batch_data.pop('eval_mask', None)
-        y = batch_data.pop('y')
+        eval_mask = batch_data.pop("eval_mask", None)
+        y = batch_data.pop("y")
 
         # Compute predictions and compute loss
         imputation = self.predict_batch(batch, preprocess=False, postprocess=False)
@@ -257,7 +260,7 @@ class Filler(pl.LightningModule):
             imputation = self._postprocess(imputation, batch_preprocessing)
         self.val_metrics.update(imputation.detach(), y, eval_mask)
         self.log_dict(self.val_metrics, on_step=False, on_epoch=True, logger=True, prog_bar=True)
-        self.log('val_loss', val_loss.detach(), on_step=False, on_epoch=True, logger=True, prog_bar=False)
+        self.log("val_loss", val_loss.detach(), on_step=False, on_epoch=True, logger=True, prog_bar=False)
         return val_loss
 
     def test_step(self, batch, batch_idx):
@@ -265,8 +268,8 @@ class Filler(pl.LightningModule):
         batch_data, batch_preprocessing = self._unpack_batch(batch)
 
         # Extract mask and target
-        eval_mask = batch_data.pop('eval_mask', None)
-        y = batch_data.pop('y')
+        eval_mask = batch_data.pop("eval_mask", None)
+        y = batch_data.pop("y")
 
         # Compute outputs and rescale
         imputation = self.predict_batch(batch, preprocess=False, postprocess=True)
@@ -280,17 +283,17 @@ class Filler(pl.LightningModule):
     def on_train_epoch_start(self) -> None:
         optimizers = ensure_list(self.optimizers())
         for i, optimizer in enumerate(optimizers):
-            lr = optimizer.optimizer.param_groups[0]['lr']
-            self.log(f'lr_{i}', lr, on_step=False, on_epoch=True, logger=True, prog_bar=False)
+            lr = optimizer.optimizer.param_groups[0]["lr"]
+            self.log(f"lr_{i}", lr, on_step=False, on_epoch=True, logger=True, prog_bar=False)
 
     def configure_optimizers(self):
-        cfg = dict()
+        cfg = {}
         optimizer = self.optim_class(self.parameters(), **self.optim_kwargs)
-        cfg['optimizer'] = optimizer
+        cfg["optimizer"] = optimizer
         if self.scheduler_class is not None:
-            metric = self.scheduler_kwargs.pop('monitor', None)
+            metric = self.scheduler_kwargs.pop("monitor", None)
             scheduler = self.scheduler_class(optimizer, **self.scheduler_kwargs)
-            cfg['lr_scheduler'] = scheduler
+            cfg["lr_scheduler"] = scheduler
             if metric is not None:
-                cfg['monitor'] = metric
+                cfg["monitor"] = metric
         return cfg

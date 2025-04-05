@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod
+
 import numpy as np
 
 
 class AbstractScaler(ABC):
-
     def __init__(self, **kwargs):
         for k, v in kwargs.items():
             setattr(self, k, v)
@@ -36,6 +36,7 @@ class AbstractScaler(ABC):
 
     def to_torch(self):
         import torch
+
         for p in self.params():
             param = getattr(self, p)
             param = np.atleast_1d(param)
@@ -45,13 +46,13 @@ class AbstractScaler(ABC):
 
 
 class Scaler(AbstractScaler):
-    def __init__(self, offset=0., scale=1.):
+    def __init__(self, offset=0.0, scale=1.0):
         self.bias = offset
         self.scale = scale
         super(Scaler, self).__init__()
 
     def params(self):
-        return dict(bias=self.bias, scale=self.scale)
+        return {"bias": self.bias, "scale": self.scale}
 
     def fit(self, x, mask=None, keepdims=True):
         pass
@@ -92,8 +93,8 @@ class MinMaxScaler(Scaler):
         if mask is not None:
             x = np.where(mask, x, np.nan)
             self.bias = np.nanmin(x, axis=self.axis, keepdims=keepdims)
-            self.scale = (np.nanmax(x, axis=self.axis, keepdims=keepdims) - self.bias)
+            self.scale = np.nanmax(x, axis=self.axis, keepdims=keepdims) - self.bias
         else:
             self.bias = x.min(axis=self.axis, keepdims=keepdims)
-            self.scale = (x.max(axis=self.axis, keepdims=keepdims) - self.bias)
+            self.scale = x.max(axis=self.axis, keepdims=keepdims) - self.bias
         return self

@@ -9,7 +9,7 @@ class GCGRUCell(nn.Module):
     Graph Convolution Gated Recurrent Unit Cell.
     """
 
-    def __init__(self, d_in, num_units, support_len, order, activation='tanh'):
+    def __init__(self, d_in, num_units, support_len, order, activation="tanh"):
         """
         :param num_units: the hidden dim of rnn
         :param support_len: the (weighted) adjacency matrix of the graph, in numpy ndarray form
@@ -19,10 +19,12 @@ class GCGRUCell(nn.Module):
         super(GCGRUCell, self).__init__()
         self.activation_fn = getattr(torch, activation)
 
-        self.forget_gate = SpatialConvOrderK(c_in=d_in + num_units, c_out=num_units, support_len=support_len,
-                                             order=order)
-        self.update_gate = SpatialConvOrderK(c_in=d_in + num_units, c_out=num_units, support_len=support_len,
-                                             order=order)
+        self.forget_gate = SpatialConvOrderK(
+            c_in=d_in + num_units, c_out=num_units, support_len=support_len, order=order
+        )
+        self.update_gate = SpatialConvOrderK(
+            c_in=d_in + num_units, c_out=num_units, support_len=support_len, order=order
+        )
         self.c_gate = SpatialConvOrderK(c_in=d_in + num_units, c_out=num_units, support_len=support_len, order=order)
 
     def forward(self, x, h, adj):
@@ -39,17 +41,11 @@ class GCGRUCell(nn.Module):
         x_c = torch.cat([x, r * h], dim=1)
         c = self.c_gate(x_c, adj)  # batch_size, self._num_nodes * output_size
         c = self.activation_fn(c)
-        return u * h + (1. - u) * c
+        return u * h + (1.0 - u) * c
 
 
 class GCRNN(nn.Module):
-    def __init__(self,
-                 d_in,
-                 d_model,
-                 d_out,
-                 n_layers,
-                 support_len,
-                 kernel_size=2):
+    def __init__(self, d_in, d_model, d_out, n_layers, support_len, kernel_size=2):
         super(GCRNN, self).__init__()
         self.d_in = d_in
         self.d_model = d_model
@@ -59,8 +55,14 @@ class GCRNN(nn.Module):
         self.support_len = support_len
         self.rnn_cells = nn.ModuleList()
         for i in range(self.n_layers):
-            self.rnn_cells.append(GCGRUCell(d_in=self.d_in if i == 0 else self.d_model,
-                                            num_units=self.d_model, support_len=self.support_len, order=self.ks))
+            self.rnn_cells.append(
+                GCGRUCell(
+                    d_in=self.d_in if i == 0 else self.d_model,
+                    num_units=self.d_model,
+                    support_len=self.support_len,
+                    order=self.ks,
+                )
+            )
         self.output_layer = nn.Conv2d(self.d_model, self.d_out, kernel_size=1)
 
     def init_hidden_states(self, x):
@@ -68,8 +70,8 @@ class GCRNN(nn.Module):
 
     def single_pass(self, x, h, adj):
         out = x
-        for l, layer in enumerate(self.rnn_cells):
-            out = h[l] = layer(out, h[l], adj)
+        for i, layer in enumerate(self.rnn_cells):
+            out = h[i] = layer(out, h[i], adj)
         return out, h
 
     def forward(self, x, adj, h=None):

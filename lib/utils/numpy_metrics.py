@@ -33,7 +33,7 @@ def nrmse_2(y_hat, y):
 
 
 def r2(y_hat, y):
-    return 1. - np.square(y_hat - y).sum() / (np.square(y.mean(0) - y).sum())
+    return 1.0 - np.square(y_hat - y).sum() / (np.square(y.mean(0) - y).sum())
 
 
 def masked_mae(y_hat, y, mask):

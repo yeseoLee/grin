@@ -1,28 +1,32 @@
 from functools import partial
 
-import torch
 from pytorch_lightning.metrics import Metric
+import torch
 from torchmetrics.utilities.checks import _check_same_shape
 
 
 class MaskedMetric(Metric):
-    def __init__(self,
-                 metric_fn,
-                 mask_nans=False,
-                 mask_inf=False,
-                 compute_on_step=True,
-                 dist_sync_on_step=False,
-                 process_group=None,
-                 dist_sync_fn=None,
-                 metric_kwargs=None,
-                 at=None):
-        super(MaskedMetric, self).__init__(compute_on_step=compute_on_step,
-                                           dist_sync_on_step=dist_sync_on_step,
-                                           process_group=process_group,
-                                           dist_sync_fn=dist_sync_fn)
+    def __init__(
+        self,
+        metric_fn,
+        mask_nans=False,
+        mask_inf=False,
+        compute_on_step=True,
+        dist_sync_on_step=False,
+        process_group=None,
+        dist_sync_fn=None,
+        metric_kwargs=None,
+        at=None,
+    ):
+        super(MaskedMetric, self).__init__(
+            compute_on_step=compute_on_step,
+            dist_sync_on_step=dist_sync_on_step,
+            process_group=process_group,
+            dist_sync_fn=dist_sync_fn,
+        )
 
         if metric_kwargs is None:
-            metric_kwargs = dict()
+            metric_kwargs = {}
         self.metric_fn = partial(metric_fn, **metric_kwargs)
         self.mask_nans = mask_nans
         self.mask_inf = mask_inf
@@ -30,8 +34,8 @@ class MaskedMetric(Metric):
             self.at = slice(None)
         else:
             self.at = slice(at, at + 1)
-        self.add_state('value', dist_reduce_fx='sum', default=torch.tensor(0.).float())
-        self.add_state('numel', dist_reduce_fx='sum', default=torch.tensor(0))
+        self.add_state("value", dist_reduce_fx="sum", default=torch.tensor(0.0).float())
+        self.add_state("numel", dist_reduce_fx="sum", default=torch.tensor(0))
 
     def _check_mask(self, mask, val):
         if mask is None:
@@ -48,7 +52,7 @@ class MaskedMetric(Metric):
         _check_same_shape(y_hat, y)
         val = self.metric_fn(y_hat, y)
         mask = self._check_mask(mask, val)
-        val = torch.where(mask, val, torch.tensor(0., device=val.device).float())
+        val = torch.where(mask, val, torch.tensor(0.0, device=val.device).float())
         return val.sum(), mask.sum()
 
     def _compute_std(self, y_hat, y):

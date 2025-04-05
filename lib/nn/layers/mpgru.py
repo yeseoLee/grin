@@ -5,18 +5,20 @@ from .gcrnn import GCGRUCell
 
 
 class MPGRUImputer(nn.Module):
-    def __init__(self,
-                 input_size,
-                 hidden_size,
-                 ff_size=None,
-                 u_size=None,
-                 n_layers=1,
-                 dropout=0.,
-                 kernel_size=2,
-                 support_len=2,
-                 n_nodes=None,
-                 layer_norm=False,
-                 autoencoder_mode=False):
+    def __init__(
+        self,
+        input_size,
+        hidden_size,
+        ff_size=None,
+        u_size=None,
+        n_layers=1,
+        dropout=0.0,
+        kernel_size=2,
+        support_len=2,
+        n_nodes=None,
+        layer_norm=False,
+        autoencoder_mode=False,
+    ):
         super(MPGRUImputer, self).__init__()
         self.input_size = int(input_size)
         self.hidden_size = int(hidden_size)
@@ -29,20 +31,26 @@ class MPGRUImputer(nn.Module):
         self.cells = nn.ModuleList()
         self.norms = nn.ModuleList()
         for i in range(self.n_layers):
-            self.cells.append(GCGRUCell(d_in=rnn_input_size if i == 0 else self.hidden_size,
-                                        num_units=self.hidden_size, support_len=support_len, order=kernel_size))
+            self.cells.append(
+                GCGRUCell(
+                    d_in=rnn_input_size if i == 0 else self.hidden_size,
+                    num_units=self.hidden_size,
+                    support_len=support_len,
+                    order=kernel_size,
+                )
+            )
             if layer_norm:
                 self.norms.append(nn.GroupNorm(num_groups=1, num_channels=self.hidden_size))
             else:
                 self.norms.append(nn.Identity())
-        self.dropout = nn.Dropout(dropout) if dropout > 0. else None
+        self.dropout = nn.Dropout(dropout) if dropout > 0.0 else None
 
         # Readout
         if self.ff_size:
             self.pred_readout = nn.Sequential(
                 nn.Conv1d(in_channels=self.hidden_size, out_channels=self.ff_size, kernel_size=1),
                 nn.PReLU(),
-                nn.Conv1d(in_channels=self.ff_size, out_channels=self.input_size, kernel_size=1)
+                nn.Conv1d(in_channels=self.ff_size, out_channels=self.input_size, kernel_size=1),
             )
         else:
             self.pred_readout = nn.Conv1d(in_channels=self.hidden_size, out_channels=self.input_size, kernel_size=1)
@@ -51,14 +59,14 @@ class MPGRUImputer(nn.Module):
         if n_nodes is not None:
             self.h0 = self.init_hidden_states(n_nodes)
         else:
-            self.register_parameter('h0', None)
+            self.register_parameter("h0", None)
 
         self.autoencoder_mode = autoencoder_mode
 
     def init_hidden_states(self, n_nodes):
         h0 = []
-        for l in range(self.n_layers):
-            std = 1. / torch.sqrt(torch.tensor(self.hidden_size, dtype=torch.float))
+        for i in range(self.n_layers):
+            std = 1.0 / torch.sqrt(torch.tensor(self.hidden_size, dtype=torch.float))
             vals = torch.distributions.Normal(0, std).sample((self.hidden_size, n_nodes))
             h0.append(nn.Parameter(vals))
         return nn.ParameterList(h0)

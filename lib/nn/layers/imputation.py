@@ -12,9 +12,9 @@ class ImputationLayer(nn.Module):
         if bias:
             self.b = nn.Parameter(torch.Tensor(d_in))
         else:
-            self.register_buffer('b', None)
-        mask = 1. - torch.eye(d_in)
-        self.register_buffer('mask', mask)
+            self.register_buffer("b", None)
+        mask = 1.0 - torch.eye(d_in)
+        self.register_buffer("mask", mask)
         self.reset_parameters()
 
     def reset_parameters(self):

@@ -5,12 +5,9 @@ from ..layers import BRITS
 
 
 class BRITSNet(nn.Module):
-    def __init__(self,
-                 d_in,
-                 d_hidden=64):
+    def __init__(self, d_in, d_hidden=64):
         super(BRITSNet, self).__init__()
-        self.birits = BRITS(input_size=d_in,
-                            hidden_size=d_hidden)
+        self.birits = BRITS(input_size=d_in, hidden_size=d_hidden)
 
     def forward(self, x, mask=None, **kwargs):
         # x: [batches, steps, features]
@@ -25,6 +22,6 @@ class BRITSNet(nn.Module):
 
     @staticmethod
     def add_model_specific_args(parser):
-        parser.add_argument('--d-in', type=int)
-        parser.add_argument('--d-hidden', type=int, default=64)
+        parser.add_argument("--d-in", type=int)
+        parser.add_argument("--d-hidden", type=int, default=64)
         return parser

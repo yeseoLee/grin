@@ -1,8 +1,9 @@
+import argparse
 import os
+
 import numpy as np
 import pandas as pd
-import argparse
-from tsl.datasets import PemsBay, MetrLA
+from tsl.datasets import MetrLA, PemsBay
 
 
 def download_datasets(datasets):
@@ -92,9 +93,7 @@ def extract_files(datasets):
 
 
 def main():
-    parser = argparse.ArgumentParser(
-        description="교통 데이터셋(METR-LA, PEMS-BAY) 준비 도구"
-    )
+    parser = argparse.ArgumentParser(description="교통 데이터셋(METR-LA, PEMS-BAY) 준비 도구")
     parser.add_argument(
         "--datasets",
         nargs="+",

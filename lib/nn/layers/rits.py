@@ -1,9 +1,9 @@
 import math
 
 import torch
+from torch.autograd import Variable
 import torch.nn as nn
 import torch.nn.functional as F
-from torch.autograd import Variable
 from torch.nn.parameter import Parameter
 
 from ..utils.ops import reverse_tensor
@@ -16,12 +16,12 @@ class FeatureRegression(nn.Module):
         self.b = Parameter(torch.Tensor(input_size))
 
         m = torch.ones(input_size, input_size) - torch.eye(input_size, input_size)
-        self.register_buffer('m', m)
+        self.register_buffer("m", m)
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.W.shape[0])
+        stdv = 1.0 / math.sqrt(self.W.shape[0])
         self.W.data.uniform_(-stdv, stdv)
         if self.b is not None:
             self.b.data.uniform_(-stdv, stdv)
@@ -39,14 +39,14 @@ class TemporalDecay(nn.Module):
         self.b = Parameter(torch.Tensor(d_out))
 
         if self.diag:
-            assert (d_in == d_out)
+            assert d_in == d_out
             m = torch.eye(d_in, d_in)
-            self.register_buffer('m', m)
+            self.register_buffer("m", m)
 
         self.reset_parameters()
 
     def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.W.shape[0])
+        stdv = 1.0 / math.sqrt(self.W.shape[0])
         self.W.data.uniform_(-stdv, stdv)
         if self.b is not None:
             self.b.data.uniform_(-stdv, stdv)
@@ -70,9 +70,7 @@ class TemporalDecay(nn.Module):
 
 
 class RITS(nn.Module):
-    def __init__(self,
-                 input_size,
-                 hidden_size=64):
+    def __init__(self, input_size, hidden_size=64):
         super(RITS, self).__init__()
         self.input_size = int(input_size)
         self.hidden_size = int(hidden_size)
@@ -143,7 +141,6 @@ class RITS(nn.Module):
 
 
 class BRITS(nn.Module):
-
     def __init__(self, input_size, hidden_size):
         super().__init__()
         self.rits_fwd = RITS(input_size, hidden_size)

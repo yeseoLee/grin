@@ -1,22 +1,18 @@
 import torch
 from torch import nn
 
-from .rnn_imputers import BiRNNImputer
 from ...utils.parser_utils import str_to_bool
+from .rnn_imputers import BiRNNImputer
 
 
 class Generator(nn.Module):
-    def __init__(self, d_in, d_model, d_z, dropout=0., inject_noise=True):
+    def __init__(self, d_in, d_model, d_z, dropout=0.0, inject_noise=True):
         super(Generator, self).__init__()
         self.inject_noise = inject_noise
         self.d_z = d_z if inject_noise else 0
-        self.birnn = BiRNNImputer(d_in,
-                                  d_model,
-                                  d_u=d_z,
-                                  concat_mask=True,
-                                  detach_inputs=False,
-                                  dropout=dropout,
-                                  state_init='zero')
+        self.birnn = BiRNNImputer(
+            d_in, d_model, d_u=d_z, concat_mask=True, detach_inputs=False, dropout=dropout, state_init="zero"
+        )
 
     def forward(self, x, mask):
         if self.inject_noise:
@@ -27,7 +23,7 @@ class Generator(nn.Module):
 
 
 class Discriminator(torch.nn.Module):
-    def __init__(self, d_in, d_model, dropout=0.):
+    def __init__(self, d_in, d_model, dropout=0.0):
         super(Discriminator, self).__init__()
         self.birnn = nn.GRU(2 * d_in, d_model, bidirectional=True, batch_first=True)
         self.dropout = nn.Dropout(dropout)
@@ -41,7 +37,7 @@ class Discriminator(torch.nn.Module):
 
 
 class RGAINNet(torch.nn.Module):
-    def __init__(self, d_in, d_model, d_z, dropout=0., inject_noise=False, k=5):
+    def __init__(self, d_in, d_model, d_z, dropout=0.0, inject_noise=False, k=5):
         super(RGAINNet, self).__init__()
         self.inject_noise = inject_noise
         self.k = k
@@ -53,16 +49,16 @@ class RGAINNet(torch.nn.Module):
             res = []
             for _ in range(self.k):
                 res.append(self.generator(x, mask)[0])
-            return torch.stack(res, 0).mean(0),
+            return (torch.stack(res, 0).mean(0),)
 
         return self.generator(x, mask)
 
     @staticmethod
     def add_model_specific_args(parser):
-        parser.add_argument('--d-in', type=int)
-        parser.add_argument('--d-model', type=int, default=None)
-        parser.add_argument('--d-z', type=int, default=8)
-        parser.add_argument('--k', type=int, default=5)
-        parser.add_argument('--inject-noise', type=str_to_bool, nargs='?', const=True, default=False)
-        parser.add_argument('--dropout', type=float, default=0.)
+        parser.add_argument("--d-in", type=int)
+        parser.add_argument("--d-model", type=int, default=None)
+        parser.add_argument("--d-z", type=int, default=8)
+        parser.add_argument("--k", type=int, default=5)
+        parser.add_argument("--inject-noise", type=str_to_bool, nargs="?", const=True, default=False)
+        parser.add_argument("--dropout", type=float, default=0.0)
         return parser

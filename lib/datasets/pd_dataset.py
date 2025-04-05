@@ -4,8 +4,16 @@ import torch
 
 
 class PandasDataset:
-    def __init__(self, dataframe: pd.DataFrame, u: pd.DataFrame = None, name='pd-dataset', mask=None, freq=None,
-                 aggr='sum', **kwargs):
+    def __init__(
+        self,
+        dataframe: pd.DataFrame,
+        u: pd.DataFrame = None,
+        name="pd-dataset",
+        mask=None,
+        freq=None,
+        aggr="sum",
+        **kwargs,
+    ):
         """
         Initialize a tsl dataset from a pandas dataframe.
 
@@ -31,12 +39,12 @@ class PandasDataset:
         self.end = idx[-1]
 
         if u is not None:
-            self.u = u[self.start:self.end]
+            self.u = u[self.start : self.end]
         else:
             self.u = None
 
         if mask is not None:
-            mask = np.asarray(mask).astype('uint8')
+            mask = np.asarray(mask).astype("uint8")
         self._mask = mask
 
         if freq is not None:
@@ -46,7 +54,7 @@ class PandasDataset:
             # make sure that all the dataframes are aligned
             self.resample_(self.freq, aggr=aggr)
 
-        assert 'T' in self.freq
+        assert "T" in self.freq
         self.samples_per_day = int(60 / int(self.freq[:-1]) * 24)
 
     def __repr__(self):
@@ -63,14 +71,14 @@ class PandasDataset:
     def resample_(self, freq, aggr):
         resampler = self.df.resample(freq)
         idx = self.df.index
-        if aggr == 'sum':
+        if aggr == "sum":
             self.df = resampler.sum()
-        elif aggr == 'mean':
+        elif aggr == "mean":
             self.df = resampler.mean()
-        elif aggr == 'nearest':
+        elif aggr == "nearest":
             self.df = resampler.nearest()
         else:
-            raise ValueError(f'{aggr} if not a valid aggregation method.')
+            raise ValueError(f"{aggr} if not a valid aggregation method.")
 
         if self.has_mask:
             resampler = pd.DataFrame(self._mask, index=idx).resample(freq)
@@ -95,7 +103,7 @@ class PandasDataset:
     @property
     def mask(self):
         if self._mask is None:
-            return np.ones_like(self.df.values).astype('uint8')
+            return np.ones_like(self.df.values).astype("uint8")
         return self._mask
 
     def numpy(self, return_idx=False):
