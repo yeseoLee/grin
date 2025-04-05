@@ -7,7 +7,7 @@ from tsl.datasets import PemsBay, MetrLA
 
 def download_datasets(datasets):
     """
-    TSL 라이브러리를 사용하여 지정된 데이터셋을 다운로드합니다.
+    TSL 라이브러리를 사용하여 교통 데이터셋을 다운로드합니다.
 
     Args:
         datasets: 다운로드할 데이터셋 목록 ('metr_la', 'pems_bay' 또는 둘 다)
@@ -28,7 +28,7 @@ def download_datasets(datasets):
             print("PEMS-Bay 데이터셋 다운로드 완료!")
             print(f"데이터셋 크기: {dataset.target.shape}")
 
-    print("모든 데이터셋 다운로드 완료!")
+    print("데이터셋 다운로드 완료!")
 
 
 def extract_files(datasets):
@@ -69,12 +69,13 @@ def extract_files(datasets):
                 sensor_ids = locations.iloc[:, 0].astype(str).values
 
         # sensor_ids.txt 생성
-        with open(f"{base_dir}/sensor_ids_{dataset_name.split('_')[-1]}.txt", "w") as f:
+        dataset_suffix = dataset_name.split("_")[-1]  # la 또는 bay
+        with open(f"{base_dir}/sensor_ids_{dataset_suffix}.txt", "w") as f:
             f.write("\n".join(sensor_ids))
 
         # distances.csv 생성
         n = dist_matrix.shape[0]
-        with open(f"{base_dir}/distances_{dataset_name.split('_')[-1]}.csv", "w") as f:
+        with open(f"{base_dir}/distances_{dataset_suffix}.csv", "w") as f:
             # CSV 헤더 작성 (from, to, cost)
             f.write("from,to,cost\n")
             for i in range(n):
@@ -84,14 +85,16 @@ def extract_files(datasets):
                         f.write(f"{i},{j},{dist_matrix[i, j]}\n")
 
         print(f"{dataset_name} 데이터셋에 대한 파일 생성 완료:")
-        print(f"- sensor_ids_{dataset_name.split('_')[-1]}.txt")
-        print(f"- distances_{dataset_name.split('_')[-1]}.csv")
+        print(f"- sensor_ids_{dataset_suffix}.txt")
+        print(f"- distances_{dataset_suffix}.csv")
 
     print("모든 파일 추출 작업이 완료되었습니다.")
 
 
 def main():
-    parser = argparse.ArgumentParser(description="교통 데이터셋 준비 도구")
+    parser = argparse.ArgumentParser(
+        description="교통 데이터셋(METR-LA, PEMS-BAY) 준비 도구"
+    )
     parser.add_argument(
         "--datasets",
         nargs="+",
