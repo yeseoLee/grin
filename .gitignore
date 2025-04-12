@@ -4,3 +4,4 @@
 # Custom
 /datasets/*
 !/datasets/prepare_traffic_datasets.py
+!/datasets/save_masked_data.py
