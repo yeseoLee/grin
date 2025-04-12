@@ -287,13 +287,12 @@ class Filler(pl.LightningModule):
             self.log(f"lr_{i}", lr, on_step=False, on_epoch=True, logger=True, prog_bar=False)
 
     def configure_optimizers(self):
-        cfg = {}
         optimizer = self.optim_class(self.parameters(), **self.optim_kwargs)
-        cfg["optimizer"] = optimizer
         if self.scheduler_class is not None:
             metric = self.scheduler_kwargs.pop("monitor", None)
             scheduler = self.scheduler_class(optimizer, **self.scheduler_kwargs)
-            cfg["lr_scheduler"] = scheduler
+            scheduler_config = {"scheduler": scheduler, "interval": "epoch", "frequency": 1}
             if metric is not None:
-                cfg["monitor"] = metric
-        return cfg
+                scheduler_config["monitor"] = metric
+            return [optimizer], [scheduler_config]
+        return optimizer

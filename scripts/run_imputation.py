@@ -49,9 +49,9 @@ def get_model_classes(model_str):
 
 
 def get_dataset(dataset_name):
-    if dataset_name[:3] == "air":
-        dataset = datasets.AirQuality(impute_nans=True, small=dataset_name[3:] == "36")
-    elif dataset_name == "bay_block":
+    # if dataset_name[:3] == "air":
+    # dataset = datasets.AirQuality(impute_nans=True, small=dataset_name[3:] == "36")
+    if dataset_name == "bay_block":
         dataset = datasets.MissingValuesPemsBay()
     elif dataset_name == "la_block":
         dataset = datasets.MissingValuesMetrLA()
@@ -69,7 +69,7 @@ def parse_args():
     parser = ArgumentParser()
     parser.add_argument("--seed", type=int, default=-1)
     parser.add_argument("--model-name", type=str, default="brits")
-    parser.add_argument("--dataset-name", type=str, default="air36")
+    parser.add_argument("--dataset-name", type=str, default="bay_block")
     parser.add_argument("--config", type=str, default=None)
     # Splitting/aggregation params
     parser.add_argument("--in-sample", type=str_to_bool, nargs="?", const=True, default=False)

@@ -1,7 +1,7 @@
+from lib.fillers.filler import Filler
 import torch
 
 from ..nn import BRITS
-from . import Filler
 
 
 class BRITSFiller(Filler):
@@ -33,7 +33,14 @@ class BRITSFiller(Filler):
         out = self._postprocess(out, batch_preprocessing)
         self.train_metrics.update(out.detach(), y, metrics_mask)
         self.log_dict(self.train_metrics, on_step=False, on_epoch=True, logger=True, prog_bar=True)
-        self.log("train_loss", loss, on_step=False, on_epoch=True, logger=True, prog_bar=False)
+        self.log(
+            "train_loss",
+            loss,
+            on_step=False,
+            on_epoch=True,
+            logger=True,
+            prog_bar=False,
+        )
         return loss
 
     def validation_step(self, batch, batch_idx):
@@ -60,7 +67,14 @@ class BRITSFiller(Filler):
         out = self._postprocess(out, batch_preprocessing)
         self.val_metrics.update(out.detach(), y, eval_mask)
         self.log_dict(self.val_metrics, on_step=False, on_epoch=True, logger=True, prog_bar=True)
-        self.log("val_loss", val_loss.detach(), on_step=False, on_epoch=True, logger=True, prog_bar=False)
+        self.log(
+            "val_loss",
+            val_loss.detach(),
+            on_step=False,
+            on_epoch=True,
+            logger=True,
+            prog_bar=False,
+        )
         return val_loss
 
     def test_step(self, batch, batch_idx):
@@ -78,5 +92,12 @@ class BRITSFiller(Filler):
         # Logging
         self.test_metrics.update(imputation.detach(), y, eval_mask)
         self.log_dict(self.test_metrics, on_step=False, on_epoch=True, logger=True, prog_bar=True)
-        self.log("test_loss", test_loss.detach(), on_step=False, on_epoch=True, logger=True, prog_bar=False)
+        self.log(
+            "test_loss",
+            test_loss.detach(),
+            on_step=False,
+            on_epoch=True,
+            logger=True,
+            prog_bar=False,
+        )
         return test_loss
